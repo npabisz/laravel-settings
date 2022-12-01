@@ -27,7 +27,7 @@ class Setting extends AbstractSetting
             ],
             [
                 'name' => 'example_setting_2',
-                'type' => 'bool',
+                'cast' => 'bool',
                 'default' => false,
             ],
         ];

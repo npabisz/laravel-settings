@@ -148,8 +148,8 @@ class Setting extends AbstractSetting
             [
                 // Another setting name
                 'name' => 'is_enabled',
-                // You can optionally specify setting type
-                'type' => 'bool',
+                // You can optionally specify setting cast
+                'cast' => 'bool',
                 // Default value for setting
                 'default' => false,
             ],
@@ -157,7 +157,7 @@ class Setting extends AbstractSetting
                 // Another setting name
                 'name' => 'address',
                 // You can use classes which will be stored as json
-                'type' => Address::class,
+                'cast' => Address::class,
             ],
         ];
     }
@@ -250,11 +250,11 @@ class User extends Authenticatable
             ],
             [
                 'name' => 'is_gamer',
-                'type' => 'bool',
+                'cast' => 'bool',
             ],
             [
                 'name' => 'games_count',
-                'type' => 'int',
+                'cast' => 'int',
             ],
         ];
     }

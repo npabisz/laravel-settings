@@ -1,6 +1,6 @@
 <?php
 
-namespace Npabisz\LaravelSettings\Settings;
+namespace Npabisz\LaravelSettings;
 
 use Npabisz\LaravelSettings\Traits\HasSettings;
 use App\Models\Setting;
@@ -74,7 +74,7 @@ class SettingsContainer
             HasSettings::class,
             array_keys((new \ReflectionClass($scopeModel::class))->getTraits())
         )) {
-            throw new \Exception('Model ' . get_class($scopeModel) . ' has use ' . HasSettings::class . ' trait');
+            throw new \Exception('Model ' . get_class($scopeModel) . ' have to use ' . HasSettings::class . ' trait');
         }
 
         if (!is_array($scopeModel::getSettingsDefinitions())) {
