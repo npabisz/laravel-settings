@@ -50,7 +50,11 @@ abstract class BaseSetting
             return [$key => null];
         }
 
-        if (!$value instanceof static) {
+        if (is_array($value)) {
+            $model = new static();
+            $model->fromArray($value);
+            $value = $model;
+        } elseif (!$value instanceof static) {
             throw new \Exception('The given value is not an ' . static::class . ' instance.');
         }
 
