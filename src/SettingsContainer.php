@@ -285,6 +285,10 @@ class SettingsContainer
     {
         $setting = $this->setting($name);
 
+        if (!$this->isValidSettingValue($name, $value)) {
+            throw new \Exception('Invalid setting value for "' . $name . '"');
+        }
+
         if ($setting) {
             $setting->value = $value;
             $setting->save();
