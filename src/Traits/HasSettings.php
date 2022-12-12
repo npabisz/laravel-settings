@@ -7,6 +7,9 @@ use Npabisz\LaravelSettings\SettingsContainer;
 use App\Models\Setting;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
+/**
+ * @property-read SettingsContainer $settings
+ */
 trait HasSettings
 {
     use HasSettingsDefinitions;
