@@ -2,6 +2,7 @@
 
 namespace Npabisz\LaravelSettings;
 
+use Npabisz\LaravelSettings\Models\BaseSetting;
 use Npabisz\LaravelSettings\Traits\HasSettings;
 use App\Models\Setting;
 use Illuminate\Database\Eloquent\Collection;
@@ -248,12 +249,13 @@ class SettingsContainer
     /**
      * @param string $name
      * @param mixed $default
+     * @param bool $returnDefaultCast
      *
      * @throws \Exception
      *
      * @return mixed
      */
-    public function get (string $name, mixed $default = null): mixed
+    public function get (string $name, mixed $default = null, bool $returnDefaultCast = true): mixed
     {
         $setting = $this->setting($name);
         $settingDefinition = [];
@@ -267,6 +269,20 @@ class SettingsContainer
         }
 
         if ($setting?->id === null) {
+            if ($returnDefaultCast
+                && !empty($settingDefinition['cast'])
+                && is_subclass_of($settingDefinition['cast'], BaseSetting::class)
+            ) {
+                $setting = new Setting([
+                    'settingable_id' => null,
+                    'settingable_type' => $this->isScoped ? $this->scopedClass : null,
+                    'name' => $settingDefinition['name'],
+                    'value' => $settingDefinition['default'] ?? null,
+                ]);
+
+                return $setting->value;
+            }
+
             return $default ?: $settingDefinition['default'] ?? null;
         }
 
