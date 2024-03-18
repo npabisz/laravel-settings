@@ -26,6 +26,29 @@ php artisan migrate
 
 ## Basic usage
 
+Example of `User` model which uses `HasSettings` trait is simple as that:
+
+```php
+// Get value of `is_gamer` setting
+$user->settings->get('is_gamer');
+
+// Set value of `games_count` setting
+$user->settings->set('games_count', 10);
+
+// Get user address object
+$address = $user->settings->get('address');
+echo "User is from $address->city";
+```
+
+You are not limited to `User` model, this works on every model:
+
+```php
+// Check if article is premium
+$article->settings->get('is_premium');
+```
+
+There are also different ways and scopes to access:
+
 ```php
 use Npabisz\LaravelSettings\Facades\Settings;
 
