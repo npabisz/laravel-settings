@@ -12,9 +12,16 @@ trait HasSettingsDefinitions
     public static function getSettingDefinition (\BackedEnum|string $name): ?array
     {
         $definitions = static::getSettingsDefinitions();
+        $stringName = $name instanceof \BackedEnum
+            ? $name->value
+            : $name;
 
         foreach ($definitions as $definition) {
-            if ($definition['name'] === $name) {
+            $definitionName = $definition['name'] instanceof \BackedEnum
+                ? $definition['name']->value
+                : $definition['name'];
+
+            if ($definitionName === $stringName) {
                 return $definition;
             }
         }

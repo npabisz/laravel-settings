@@ -57,6 +57,10 @@ abstract class AbstractSetting extends Model
                     $definition = $attributes['settingable_type']::getSettingDefinition($attributes['name']);
                 }
 
+                if (!empty($definition['enum'])) {
+                    return $this->castToType($definition['enum'], $value);
+                }
+
                 if (empty($definition['cast'])) {
                     return $value;
                 }
@@ -68,6 +72,12 @@ abstract class AbstractSetting extends Model
 
                 if ($attributes['settingable_type']) {
                     $definition = $attributes['settingable_type']::getSettingDefinition($attributes['name']);
+                }
+
+                if (!empty($definition['enum'])) {
+                    $this->setAttributeByType($definition['enum'], 'value', $value);
+
+                    return $this->attributes['value'];
                 }
 
                 if (empty($definition['cast'])) {
@@ -118,8 +128,8 @@ abstract class AbstractSetting extends Model
         }
 
         if (!empty($definition['enum'])) {
-            return array_map(function ($item) {
-                if ($this->name instanceof \BackedEnum) {
+            return array_map(function ($item) use ($definition) {
+                if ((new \ReflectionEnum($definition['enum']))->isBacked()) {
                     return $item->value;
                 } else {
                     return $item->name;

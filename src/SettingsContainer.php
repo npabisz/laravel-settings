@@ -237,7 +237,7 @@ class SettingsContainer
             if ($this->castSettingName($definition['name']) === $this->castSettingName($name)) {
                 if (!empty($definition['enum'])) {
                     return array_map(function ($item) use ($definition) {
-                        if ($definition['enum'] instanceof \BackedEnum) {
+                        if ((new \ReflectionEnum($definition['enum']))->isBacked()) {
                             return $item->value;
                         } else {
                             return $item->name;
@@ -369,6 +369,7 @@ class SettingsContainer
                 'name' => $name,
                 'value' => $value,
             ]);
+            $setting = Setting::find($setting->id);
 
             if ($this->cacheSettings && $this->cachedSettings) {
                 $this->cachedSettings->add($setting);
