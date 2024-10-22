@@ -82,21 +82,56 @@ abstract class AbstractSetting extends Model
     }
 
     /**
-     * @param string $name
+     * @param \BackedEnum|string $name
      *
-     * @return ?array
+     * @return array|null
      */
-    public static function getSettingDefinition (string $name): ?array
+    public static function getSettingDefinition (\BackedEnum|string $name): ?array
     {
         $definitions = static::getSettingsDefinitions();
+        $stringName = $name instanceof \BackedEnum
+            ? $name->value
+            : $name;
 
         foreach ($definitions as $definition) {
-            if ($definition['name'] === $name) {
+            $definitionName = $definition['name'] instanceof \BackedEnum
+                ? $definition['name']->value
+                : $definition['name'];
+
+            if ($definitionName === $stringName) {
                 return $definition;
             }
         }
 
         return null;
+    }
+
+    /**
+     * @return array
+     */
+    public function getSettingOptions (): array
+    {
+        $definition = self::getSettingDefinition($this->name);
+
+        if ($this->settingable_type) {
+            $definition = $this->settingable_type::getSettingDefinition($this->name);
+        }
+
+        if (!empty($definition['enum'])) {
+            return array_map(function ($item) {
+                if ($this->name instanceof \BackedEnum) {
+                    return $item->value;
+                } else {
+                    return $item->name;
+                }
+            }, $definition['enum']::cases());
+        }
+
+        if (isset($definition['options'])) {
+            return $definition['options'];
+        }
+
+        return [];
     }
 
     /**

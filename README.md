@@ -40,6 +40,22 @@ $address = $user->settings->get('address');
 echo "User is from $address->city";
 ```
 
+You can use it with enums
+
+```php
+enum Settings: string {
+    case ApiMode = 'api_mode';
+    case Enabled = 'enabled';
+}
+
+enum ApiMode: string {
+    case Production = 'production';
+    case Sandbox = 'sandbox';
+}
+
+$user->settings->set(Settings::ApiMode, ApiMode::Production);
+```
+
 You are not limited to `User` model, this works on every model:
 
 ```php
@@ -239,6 +255,71 @@ class Address extends BaseSetting
             'street' => $this->street,
             'zipcode' => $this->zipcode,
             'city' => $this->city,
+        ];
+    }
+}
+```
+
+Example of using enums
+
+```php
+enum Settings: string {
+    case ApiMode = 'api_mode';
+    case Enabled = 'enabled';
+}
+```
+```php
+enum ApiMode: string {
+    case Production = 'production';
+    case Sandbox = 'sandbox';
+}
+```
+```php
+use Npabisz\LaravelSettings\Models\AbstractSetting;
+
+use App\Enums\Settings;
+use App\Enums\ApiMode;
+
+class Setting extends AbstractSetting
+{
+    /**
+     * @return array
+     */
+    public static function getSettingsDefinitions (): array
+    {
+        return [
+            [
+                'name' => Settings::ApiMode,
+                'default' => ApiMode::Sandbox,
+                'enum' => ApiMode::class,
+            ],
+            [
+                'name' => Settings::Enabled,
+                'cast' => 'bool',
+                'default' => false,
+            ]
+        ];
+    }
+}
+```
+
+Example of `nullable` setting
+
+```php
+use Npabisz\LaravelSettings\Models\AbstractSetting;
+
+class Setting extends AbstractSetting
+{
+    /**
+     * @return array
+     */
+    public static function getSettingsDefinitions (): array
+    {
+        return [
+            [
+                'name' => 'display_name',
+                'is_nullable' => true,
+            ]
         ];
     }
 }

@@ -115,6 +115,18 @@ class SettingsContainer
     }
 
     /**
+     * @param \BackedEnum|string $name
+     *
+     * @return string
+     */
+    protected function castSettingName (\BackedEnum|string $name): string
+    {
+        return $name instanceof \BackedEnum
+            ? $name->value
+            : $name;
+    }
+
+    /**
      * @param Collection $collection
      *
      * @return Collection
@@ -122,7 +134,7 @@ class SettingsContainer
     protected function appendDefaults (Collection $collection): Collection
     {
         foreach ($this->getDefaults() as $default) {
-            if ($collection->where('name', $default->name)->first()) {
+            if ($collection->where('name', $this->castSettingName($default->name))->first()) {
                 continue;
             }
 
@@ -150,14 +162,14 @@ class SettingsContainer
     }
 
     /**
-     * @param string $name
+     * @param \BackedEnum|string $name
      *
      * @return bool
      */
-    public function isValidSettingName (string $name): bool
+    public function isValidSettingName (\BackedEnum|string $name): bool
     {
         foreach ($this->getDefinitions() as $definition) {
-            if ($definition['name'] === $name) {
+            if ($this->castSettingName($definition['name']) === $this->castSettingName($name)) {
                 return true;
             }
         }
@@ -166,16 +178,38 @@ class SettingsContainer
     }
 
     /**
-     * @param string $name
+     * @param \BackedEnum|string $name
      * @param mixed $value
      *
      * @return bool
      */
-    public function isValidSettingValue (string $name, mixed $value): bool
+    public function isValidSettingValue (\BackedEnum|string $name, mixed $value): bool
     {
+        if ($value === null) {
+            foreach ($this->getDefinitions() as $definition) {
+                if ($this->castSettingName($definition['name']) === $this->castSettingName($name)) {
+                    if (isset($definition['is_nullable']) && $definition['is_nullable'] === true) {
+                        return true;
+                    }
+
+                    return false;
+                }
+            }
+        }
+
         $options = $this->getSettingOptions($name);
 
         if (!empty($options)) {
+            $options = array_map(function ($option) {
+                return $option instanceof \BackedEnum
+                    ? $option->value
+                    : $option;
+            }, $options);
+
+            $value = $value instanceof \BackedEnum
+                ? $value->value
+                : $value;
+
             return in_array($value, $options);
         }
 
@@ -193,15 +227,27 @@ class SettingsContainer
     }
 
     /**
-     * @param string $name
+     * @param \BackedEnum|string $name
      *
      * @return array
      */
-    public function getSettingOptions (string $name): array
+    public function getSettingOptions (\BackedEnum|string $name): array
     {
         foreach ($this->getDefinitions() as $definition) {
-            if ($definition['name'] === $name && isset($definition['options'])) {
-                return $definition['options'];
+            if ($this->castSettingName($definition['name']) === $this->castSettingName($name)) {
+                if (!empty($definition['enum'])) {
+                    return array_map(function ($item) use ($definition) {
+                        if ($definition['enum'] instanceof \BackedEnum) {
+                            return $item->value;
+                        } else {
+                            return $item->name;
+                        }
+                    }, $definition['enum']::cases());
+                }
+
+                if (isset($definition['options'])) {
+                    return $definition['options'];
+                }
             }
         }
 
@@ -209,14 +255,22 @@ class SettingsContainer
     }
 
     /**
-     * @param string $name
+     * @param \BackedEnum|string $name
      *
      * @throws \Exception
      *
-     * @return ?Setting
+     * @return Setting|null
      */
-    public function setting (string $name): ?Setting
+    public function setting (\BackedEnum|string $name): ?Setting
     {
+        if ($name instanceof \BackedEnum) {
+            $reflection = new \ReflectionEnum($name);
+
+            if ((string) $reflection->getBackingType() !== 'string') {
+                throw new \Exception('Only BackedEnum of string type can be used as setting name');
+            }
+        }
+
         if (!$this->isValidSettingName($name)) {
             if ($this->isScoped) {
                 throw new \Exception($this->scopedClass . ' setting definition does not exists for "' . $name . '"');
@@ -229,39 +283,39 @@ class SettingsContainer
             $this->all();
 
             return $this->cachedSettings
-                ->where('name', $name)
+                ->where('name', $this->castSettingName($name))
                 ->first();
         }
 
         if ($this->isScoped) {
             return Setting::where('settingable_id', $this->scopedModel->id)
                 ->where('settingable_type', $this->scopedClass)
-                ->where('name', $name)
+                ->where('name', $this->castSettingName($name))
                 ->first();
         }
 
         return Setting::whereNull('settingable_id')
             ->whereNull('settingable_type')
-            ->where('name', $name)
+            ->where('name', $this->castSettingName($name))
             ->first();
     }
 
     /**
-     * @param string $name
-     * @param mixed $default
+     * @param \BackedEnum|string $name
+     * @param mixed|null $default
      * @param bool $returnDefaultCast
      *
      * @throws \Exception
      *
      * @return mixed
      */
-    public function get (string $name, mixed $default = null, bool $returnDefaultCast = true): mixed
+    public function get (\BackedEnum|string $name, mixed $default = null, bool $returnDefaultCast = true): mixed
     {
         $setting = $this->setting($name);
         $settingDefinition = [];
 
         foreach ($this->getDefinitions() as $definition) {
-            if ($definition['name'] === $name) {
+            if ($this->castSettingName($definition['name']) === $this->castSettingName($name)) {
                 $settingDefinition = $definition;
 
                 break;
@@ -290,14 +344,14 @@ class SettingsContainer
     }
 
     /**
-     * @param string $name
+     * @param \BackedEnum|string $name
      * @param mixed $value
      *
      * @throws \Exception
      *
      * @return Setting
      */
-    public function set (string $name, mixed $value): Setting
+    public function set (\BackedEnum|string $name, mixed $value): Setting
     {
         $setting = $this->setting($name);
 

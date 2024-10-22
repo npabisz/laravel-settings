@@ -63,7 +63,11 @@ trait CastsToType
             return $value;
         }
 
-        return $this->getEnumCaseFromValue($castType, $value);
+        try {
+            return $this->getEnumCaseFromValue($castType, $value);
+        } catch (\Error $e) {
+            return null;
+        }
     }
 
     /**
@@ -141,12 +145,13 @@ trait CastsToType
     {
         $enumClass = $type;
 
-        if (! isset($value)) {
+        if (!isset($value)) {
             $this->attributes[$key] = null;
         } elseif (is_object($value)) {
-            $this->attributes[$key] = $this->getStorableEnumValue($value);
+            $this->attributes[$key] = $this->getStorableEnumValue($type, $value);
         } else {
             $this->attributes[$key] = $this->getStorableEnumValue(
+                $type,
                 $this->getEnumCaseFromValue($enumClass, $value)
             );
         }
