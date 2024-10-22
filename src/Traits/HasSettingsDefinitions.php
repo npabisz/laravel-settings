@@ -9,7 +9,7 @@ trait HasSettingsDefinitions
      *
      * @return ?array
      */
-    public static function getSettingDefinition (string $name): ?array
+    public static function getSettingDefinition (\BackedEnum|string $name): ?array
     {
         $definitions = static::getSettingsDefinitions();
 
