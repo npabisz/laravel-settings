@@ -28,6 +28,7 @@ class SettingsServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->offerPublishing();
+        $this->registerQueueListeners();
     }
 
     /**
@@ -48,5 +49,17 @@ class SettingsServiceProvider extends ServiceProvider
                 __DIR__.'/../stubs/Setting.stub' => app_path('Models/Setting.php'),
             ], 'settings-model');
         }
+    }
+
+    /**
+     * Clear cached scopes between queue jobs to prevent stale data.
+     *
+     * @return void
+     */
+    protected function registerQueueListeners()
+    {
+        $this->app['events']->listen('Illuminate\Queue\Events\JobProcessing', function () {
+            $this->app->make('settings')->clearAllScopes();
+        });
     }
 }

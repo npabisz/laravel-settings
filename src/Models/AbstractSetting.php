@@ -68,7 +68,7 @@ abstract class AbstractSetting extends Model
                 return $this->castToType($definition['cast'], $value);
             },
             set: function ($value, $attributes) {
-                $definition = self::getSettingDefinition($attributes['name']);
+                $definition = static::getSettingDefinition($attributes['name']);
 
                 if ($attributes['settingable_type']) {
                     $definition = $attributes['settingable_type']::getSettingDefinition($attributes['name']);

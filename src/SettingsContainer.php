@@ -71,10 +71,7 @@ class SettingsContainer
      */
     protected function checkMethods (Model $scopeModel): void
     {
-        if (!in_array(
-            HasSettings::class,
-            array_keys((new \ReflectionClass($scopeModel::class))->getTraits())
-        )) {
+        if (!in_array(HasSettings::class, class_uses_recursive($scopeModel))) {
             throw new \Exception('Model ' . get_class($scopeModel) . ' have to use ' . HasSettings::class . ' trait');
         }
 
@@ -103,12 +100,14 @@ class SettingsContainer
         $settings = [];
 
         foreach ($this->getDefinitions() as $definition) {
-            $settings[] = new Setting([
+            $setting = new Setting();
+            $setting->setRawAttributes([
                 'settingable_id' => null,
                 'settingable_type' => $this->isScoped ? $this->scopedClass : null,
-                'name' => $definition['name'],
+                'name' => $definition['name'] instanceof \BackedEnum ? $definition['name']->value : $definition['name'],
                 'value' => $definition['default'] ?? null,
             ]);
+            $settings[] = $setting;
         }
 
         return collect($settings);
@@ -223,7 +222,12 @@ class SettingsContainer
      */
     public function isScopedTo (?Model $model = null): bool
     {
-        return $model && $this?->scopedModel === $model;
+        if (!$model || !$this->scopedModel) {
+            return false;
+        }
+
+        return get_class($model) === $this->scopedClass
+            && $model->getKey() === $this->scopedModel->getKey();
     }
 
     /**
@@ -327,17 +331,18 @@ class SettingsContainer
                 && !empty($settingDefinition['cast'])
                 && is_subclass_of($settingDefinition['cast'], BaseSetting::class)
             ) {
-                $setting = new Setting([
+                $setting = new Setting();
+                $setting->setRawAttributes([
                     'settingable_id' => null,
                     'settingable_type' => $this->isScoped ? $this->scopedClass : null,
-                    'name' => $settingDefinition['name'],
+                    'name' => $settingDefinition['name'] instanceof \BackedEnum ? $settingDefinition['name']->value : $settingDefinition['name'],
                     'value' => $settingDefinition['default'] ?? null,
                 ]);
 
                 return $setting->value;
             }
 
-            return $default ?: $settingDefinition['default'] ?? null;
+            return $default ?? $settingDefinition['default'] ?? null;
         }
 
         return $setting->value;

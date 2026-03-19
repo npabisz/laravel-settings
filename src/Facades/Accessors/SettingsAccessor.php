@@ -18,6 +18,8 @@ class SettingsAccessor
     protected SettingsContainer $settings;
 
     /**
+     * Scoped settings containers keyed by "ClassName:id"
+     *
      * @var SettingsContainer[]
      */
     protected array $scopedSettings = [];
@@ -35,6 +37,12 @@ class SettingsAccessor
     }
 
     /**
+     * Get or create a cached SettingsContainer for the given model.
+     *
+     * The container is cached per model class and primary key,
+     * so subsequent calls with the same model return the same
+     * container (with its in-memory settings cache intact).
+     *
      * @param Model $model
      *
      * @throws \Exception
@@ -43,13 +51,13 @@ class SettingsAccessor
      */
     public function scope (Model $model): SettingsContainer
     {
-        $scoped = $this->scopedSettings[get_class($model)] ?? null;
+        $key = $this->getScopeKey($model);
 
-        if ($scoped && $scoped->isScopedTo($model)) {
-            return $scoped;
+        if (isset($this->scopedSettings[$key])) {
+            return $this->scopedSettings[$key];
         }
 
-        return new SettingsContainer($model);
+        return $this->scopedSettings[$key] = new SettingsContainer($model);
     }
 
     /**
@@ -61,7 +69,51 @@ class SettingsAccessor
      */
     public function scopeGlobal (Model $model): SettingsContainer
     {
-        return $this->scopedSettings[get_class($model)] = new SettingsContainer($model, true);
+        $key = $this->getScopeKey($model);
+
+        return $this->scopedSettings[$key] = new SettingsContainer($model, true);
+    }
+
+    /**
+     * Clear the cached scope for a specific model.
+     *
+     * @param Model $model
+     *
+     * @return void
+     */
+    public function clearScope (Model $model): void
+    {
+        $key = $this->getScopeKey($model);
+
+        if (isset($this->scopedSettings[$key])) {
+            $this->scopedSettings[$key]->clearCache();
+            unset($this->scopedSettings[$key]);
+        }
+    }
+
+    /**
+     * Clear all cached scopes and their settings.
+     *
+     * Useful for queue workers processing multiple jobs
+     * in the same process, to prevent stale settings data.
+     *
+     * @return void
+     */
+    public function clearAllScopes (): void
+    {
+        $this->scopedSettings = [];
+    }
+
+    /**
+     * Build a unique cache key for a scoped model.
+     *
+     * @param Model $model
+     *
+     * @return string
+     */
+    protected function getScopeKey (Model $model): string
+    {
+        return get_class($model) . ':' . $model->getKey();
     }
 
     /**
@@ -78,10 +130,12 @@ class SettingsAccessor
             return $this->forwardCallTo($this->settings, $method, $arguments);
         } catch (Error|BadMethodCallException $e) {
             foreach ($this->scopedSettings as $class => $container) {
-                $shortName = (new \ReflectionClass($class))->getShortName();
+                // Extract class part from "ClassName:id" key
+                $className = explode(':', $class)[0];
+                $shortName = class_basename($className);
 
                 if (strtolower($shortName) === $method) {
-                    return $this->scopedSettings[$class];
+                    return $container;
                 }
             }
 
