@@ -74,6 +74,55 @@ class BackwardsCompatibilityTest extends TestCase
         $this->assertFalse(Settings::scope($user)->get('app_enabled'));
     }
 
+    public function test_bool_string_false_from_db_casts_correctly(): void
+    {
+        $user = $this->createUser();
+        // Simulate raw "false" string in DB (issue #6)
+        Setting::create([
+            'settingable_id' => $user->id,
+            'settingable_type' => User::class,
+            'name' => 'app_enabled',
+            'value' => 'false',
+        ]);
+        $this->assertFalse(Settings::scope($user)->get('app_enabled'));
+    }
+
+    public function test_bool_string_true_from_db_casts_correctly(): void
+    {
+        $user = $this->createUser();
+        Setting::create([
+            'settingable_id' => $user->id,
+            'settingable_type' => User::class,
+            'name' => 'app_enabled',
+            'value' => 'true',
+        ]);
+        $this->assertTrue(Settings::scope($user)->get('app_enabled'));
+    }
+
+    public function test_bool_string_zero_from_db_casts_correctly(): void
+    {
+        $user = $this->createUser();
+        Setting::create([
+            'settingable_id' => $user->id,
+            'settingable_type' => User::class,
+            'name' => 'app_enabled',
+            'value' => '0',
+        ]);
+        $this->assertFalse(Settings::scope($user)->get('app_enabled'));
+    }
+
+    public function test_bool_string_one_from_db_casts_correctly(): void
+    {
+        $user = $this->createUser();
+        Setting::create([
+            'settingable_id' => $user->id,
+            'settingable_type' => User::class,
+            'name' => 'app_enabled',
+            'value' => '1',
+        ]);
+        $this->assertTrue(Settings::scope($user)->get('app_enabled'));
+    }
+
     // ═══════════════════════════════════════════════════════════
     // CAST: integer
     // ═══════════════════════════════════════════════════════════
