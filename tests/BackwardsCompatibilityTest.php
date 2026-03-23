@@ -345,10 +345,10 @@ class BackwardsCompatibilityTest extends TestCase
     public function test_class_cast_set_null_not_nullable_throws(): void
     {
         $user = $this->createUser();
-        // sender_info is not marked is_nullable, so setting null should throw
+        // app_enabled is marked is_nullable => false, so setting null should throw
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('Invalid setting value');
-        Settings::scope($user)->set('sender_info', null);
+        Settings::scope($user)->set('app_enabled', null);
     }
 
     // ═══════════════════════════════════════════════════════════

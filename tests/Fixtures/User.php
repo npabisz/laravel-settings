@@ -14,11 +14,12 @@ class User extends Authenticatable
     public static function getSettingsDefinitions(): array
     {
         return [
-            // Bool with default
+            // Bool with default, explicitly non-nullable
             [
                 'name' => 'app_enabled',
                 'cast' => 'bool',
                 'default' => true,
+                'is_nullable' => false,
             ],
             // String with options
             [

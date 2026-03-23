@@ -187,11 +187,11 @@ class SettingsContainer
         if ($value === null) {
             foreach ($this->getDefinitions() as $definition) {
                 if ($this->castSettingName($definition['name']) === $this->castSettingName($name)) {
-                    if (isset($definition['is_nullable']) && $definition['is_nullable'] === true) {
-                        return true;
+                    if (isset($definition['is_nullable']) && $definition['is_nullable'] === false) {
+                        return false;
                     }
 
-                    return false;
+                    return true;
                 }
             }
         }
