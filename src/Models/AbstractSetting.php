@@ -6,6 +6,7 @@ use Npabisz\LaravelSettings\Traits\CastsToType;
 use Npabisz\LaravelSettings\Traits\HasSettingsDefinitions;
 use Illuminate\Contracts\Database\Eloquent\CastsInboundAttributes;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
@@ -35,6 +36,15 @@ abstract class AbstractSetting extends Model
     protected $casts = [
         'settingable_id' => 'integer',
     ];
+
+    /**
+     * Override to prevent Laravel 13's HasCollection from trying to
+     * resolve a collection class on this abstract model.
+     */
+    public function newCollection(array $models = []): Collection
+    {
+        return new Collection($models);
+    }
 
     /**
      * @return MorphTo
