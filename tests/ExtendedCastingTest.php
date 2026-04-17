@@ -208,6 +208,36 @@ class ExtendedCastingTest extends TestCase
         $this->assertEquals('Acme Inc', $value->company);
     }
 
+    /**
+     * Regression: reading a BaseSetting-cast value 3+ times on the same container
+     * used to throw "Undefined array key 'value'" after the second read — the
+     * Attribute set closure populated classCastCache['value'] as a side effect,
+     * and Laravel 13's per-key merge (mergeAttributeFromClassCasts) then tried to
+     * resolve 'value' in $casts, which doesn't exist.
+     */
+    public function test_class_cast_multiple_reads_on_same_container(): void
+    {
+        $user = $this->createUser();
+
+        $sender = new SenderSetting();
+        $sender->fromArray([
+            'name' => 'John Doe',
+            'email' => 'john@example.com',
+            'phone' => '+48123456789',
+            'company' => 'Acme Inc',
+        ]);
+        Settings::scope($user)->set('sender_info', $sender);
+        Settings::clearScope($user);
+
+        $container = Settings::scope($user);
+
+        for ($i = 0; $i < 5; $i++) {
+            $value = $container->get('sender_info');
+            $this->assertInstanceOf(SenderSetting::class, $value, "Read #{$i} failed");
+            $this->assertEquals('John Doe', $value->name);
+        }
+    }
+
     public function test_class_cast_set_with_array(): void
     {
         $user = $this->createUser();

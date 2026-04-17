@@ -170,24 +170,44 @@ abstract class AbstractSetting extends Model
     protected function mergeAttributesFromClassCasts ()
     {
         foreach ($this->classCastCache as $key => $value) {
-            if ($key === 'value') {
-                $definition = self::getSettingDefinition($this->attributes['name']);
+            $this->mergeAttributeFromClassCasts($key);
+        }
+    }
 
-                if ($this->attributes['settingable_type']) {
-                    $definition = $this->attributes['settingable_type']::getSettingDefinition($this->attributes['name']);
-                }
+    /**
+     * Merge a single cast class attribute back into the model.
+     *
+     * Overrides Laravel 13's per-key method so the 'value' key resolves its caster
+     * from the setting definition (via getSettingDefinition) instead of the model's
+     * $casts array — the Setting model never declares 'value' in $casts.
+     *
+     * @return void
+     */
+    protected function mergeAttributeFromClassCasts (string $key): void
+    {
+        if (!isset($this->classCastCache[$key])) {
+            return;
+        }
 
-                $caster = $this->resolveCasterClassByType($definition['cast'] ?? 'string');
-            } else {
-                $caster = $this->resolveCasterClass($key);
+        $value = $this->classCastCache[$key];
+
+        if ($key === 'value') {
+            $definition = self::getSettingDefinition($this->attributes['name']);
+
+            if ($this->attributes['settingable_type']) {
+                $definition = $this->attributes['settingable_type']::getSettingDefinition($this->attributes['name']);
             }
 
-            $this->attributes = array_merge(
-                $this->attributes,
-                $caster instanceof CastsInboundAttributes
-                    ? [$key => $value]
-                    : $this->normalizeCastClassResponse($key, $caster->set($this, $key, $value, $this->attributes))
-            );
+            $caster = $this->resolveCasterClassByType($definition['cast'] ?? 'string');
+        } else {
+            $caster = $this->resolveCasterClass($key);
         }
+
+        $this->attributes = array_merge(
+            $this->attributes,
+            $caster instanceof CastsInboundAttributes
+                ? [$key => $value]
+                : $this->normalizeCastClassResponse($key, $caster->set($this, $key, $value, $this->attributes))
+        );
     }
 }
