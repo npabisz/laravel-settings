@@ -4,7 +4,6 @@ namespace Npabisz\LaravelSettings\Traits;
 
 use Npabisz\LaravelSettings\Facades\Settings;
 use Npabisz\LaravelSettings\SettingsContainer;
-use App\Models\Setting;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
@@ -24,7 +23,7 @@ trait HasSettings
      */
     public function settingsRelation (): MorphMany
     {
-        return $this->morphMany(Setting::class, 'settingable');
+        return $this->morphMany(SettingsContainer::getSettingModelClass(), 'settingable');
     }
 
     /**

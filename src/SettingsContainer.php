@@ -2,9 +2,9 @@
 
 namespace Npabisz\LaravelSettings;
 
+use Npabisz\LaravelSettings\Models\AbstractSetting;
 use Npabisz\LaravelSettings\Models\BaseSetting;
 use Npabisz\LaravelSettings\Traits\HasSettings;
-use App\Models\Setting;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
@@ -44,6 +44,16 @@ class SettingsContainer
      * @var bool
      */
     protected bool $cacheSettings = true;
+
+    /**
+     * Resolve the FQCN of the configured Setting model.
+     *
+     * @return string
+     */
+    public static function getSettingModelClass (): string
+    {
+        return config('settings.model', \App\Models\Setting::class);
+    }
 
     /**
      * @param ?Model $scopeModel
@@ -86,7 +96,9 @@ class SettingsContainer
     protected function getDefinitions (): array
     {
         if (!$this->isScoped) {
-            return Setting::getGlobalSettingsDefinitions();
+            $settingClass = static::getSettingModelClass();
+
+            return $settingClass::getGlobalSettingsDefinitions();
         }
 
         return $this->scopedClass::getSettingsDefinitions();
@@ -98,9 +110,10 @@ class SettingsContainer
     protected function getDefaults (): \Illuminate\Support\Collection
     {
         $settings = [];
+        $settingClass = static::getSettingModelClass();
 
         foreach ($this->getDefinitions() as $definition) {
-            $setting = new Setting();
+            $setting = new $settingClass();
             $setting->setRawAttributes([
                 'settingable_id' => null,
                 'settingable_type' => $this->isScoped ? $this->scopedClass : null,
@@ -263,10 +276,12 @@ class SettingsContainer
      *
      * @throws \Exception
      *
-     * @return Setting|null
+     * @return AbstractSetting|null
      */
-    public function setting (\BackedEnum|string $name): ?Setting
+    public function setting (\BackedEnum|string $name): ?AbstractSetting
     {
+        $settingClass = static::getSettingModelClass();
+
         if ($name instanceof \BackedEnum) {
             $reflection = new \ReflectionEnum($name);
 
@@ -292,13 +307,13 @@ class SettingsContainer
         }
 
         if ($this->isScoped) {
-            return Setting::where('settingable_id', $this->scopedModel->id)
+            return $settingClass::where('settingable_id', $this->scopedModel->id)
                 ->where('settingable_type', $this->scopedClass)
                 ->where('name', $this->castSettingName($name))
                 ->first();
         }
 
-        return Setting::whereNull('settingable_id')
+        return $settingClass::whereNull('settingable_id')
             ->whereNull('settingable_type')
             ->where('name', $this->castSettingName($name))
             ->first();
@@ -331,7 +346,8 @@ class SettingsContainer
                 && !empty($settingDefinition['cast'])
                 && is_subclass_of($settingDefinition['cast'], BaseSetting::class)
             ) {
-                $setting = new Setting();
+                $settingClass = static::getSettingModelClass();
+                $setting = new $settingClass();
                 $setting->setRawAttributes([
                     'settingable_id' => null,
                     'settingable_type' => $this->isScoped ? $this->scopedClass : null,
@@ -354,9 +370,9 @@ class SettingsContainer
      *
      * @throws \Exception
      *
-     * @return Setting
+     * @return AbstractSetting
      */
-    public function set (\BackedEnum|string $name, mixed $value): Setting
+    public function set (\BackedEnum|string $name, mixed $value): AbstractSetting
     {
         $setting = $this->setting($name);
 
@@ -368,13 +384,14 @@ class SettingsContainer
             $setting->value = $value;
             $setting->save();
         } else {
-            $setting = Setting::create([
+            $settingClass = static::getSettingModelClass();
+            $setting = $settingClass::create([
                 'settingable_id' => $this->isScoped ? $this->scopedModel->id : null,
                 'settingable_type' => $this->isScoped ? $this->scopedClass : null,
                 'name' => $name,
                 'value' => $value,
             ]);
-            $setting = Setting::find($setting->id);
+            $setting = $settingClass::find($setting->id);
 
             if ($this->cacheSettings && $this->cachedSettings) {
                 $this->cachedSettings->add($setting);
@@ -394,15 +411,17 @@ class SettingsContainer
             return $this->cachedSettings;
         }
 
+        $settingClass = static::getSettingModelClass();
+
         if ($this->isScoped) {
-            $this->cachedSettings = Setting::where('settingable_id', $this->scopedModel->id)
+            $this->cachedSettings = $settingClass::where('settingable_id', $this->scopedModel->id)
                 ->where('settingable_type', $this->scopedClass)
                 ->get();
 
             return $this->cachedSettings;
         }
 
-        $this->cachedSettings = Setting::whereNull('settingable_id')
+        $this->cachedSettings = $settingClass::whereNull('settingable_id')
             ->whereNull('settingable_type')
             ->get();
 

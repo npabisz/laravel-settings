@@ -15,6 +15,8 @@ class SettingsServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        $this->mergeConfigFrom(__DIR__.'/../config/settings.php', 'settings');
+
         $this->app->singleton('settings', function ($app) {
             return new SettingsAccessor(Auth::user());
         });
@@ -44,6 +46,10 @@ class SettingsServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__.'/../database/migrations' => database_path('migrations'),
             ], 'settings-migrations');
+
+            $this->publishes([
+                __DIR__.'/../config/settings.php' => config_path('settings.php'),
+            ], 'settings-config');
 
             $this->publishes([
                 __DIR__.'/../stubs/Setting.stub' => app_path('Models/Setting.php'),

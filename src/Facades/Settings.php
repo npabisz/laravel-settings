@@ -2,8 +2,8 @@
 
 namespace Npabisz\LaravelSettings\Facades;
 
+use Npabisz\LaravelSettings\Models\AbstractSetting;
 use Npabisz\LaravelSettings\SettingsContainer;
-use App\Models\Setting;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Facade;
@@ -16,9 +16,9 @@ use Illuminate\Support\Facades\Facade;
  * @method static bool isValidSettingValue (\BackedEnum|string $name, mixed $value)
  * @method static bool isScopedTo (?Model $model = null)
  * @method static array getSettingOptions (\BackedEnum|string $name)
- * @method static Setting|null setting (\BackedEnum|string $name)
+ * @method static AbstractSetting|null setting (\BackedEnum|string $name)
  * @method static mixed get (\BackedEnum|string $name, mixed $default = null)
- * @method static Setting set (\BackedEnum|string $name, mixed $value)
+ * @method static AbstractSetting set (\BackedEnum|string $name, mixed $value)
  * @method static Collection all ()
  * @method static Collection allWithDefaults ()
  * @method static clearCache()

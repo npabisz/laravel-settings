@@ -24,6 +24,28 @@ Finally, you should run migration
 php artisan migrate
 ```
 
+## Using a custom Setting model location (DDD)
+
+By default the package looks for `App\Models\Setting`. If your project keeps
+the model elsewhere — for example inside a DDD domain folder like
+`App\Domain\Settings\Models\Setting` — publish the config and point it at your
+class:
+
+```bash
+php artisan vendor:publish --tag=settings-config
+```
+
+```php
+// config/settings.php
+return [
+    'model' => \App\Domain\Settings\Models\Setting::class,
+];
+```
+
+The class must extend `Npabisz\LaravelSettings\Models\AbstractSetting`. No
+database changes are required — `settingable_type` stores the *owner* model
+FQCN, not the Setting FQCN, so relocating the Setting class is transparent.
+
 ## Basic usage
 
 Example of `User` model which uses `HasSettings` trait is simple as that:
