@@ -46,6 +46,21 @@ class SettingsContainer
     protected bool $cacheSettings = true;
 
     /**
+     * @var ?array<string, AbstractSetting>
+     */
+    protected ?array $cachedSettingsByName = null;
+
+    /**
+     * @var ?Collection
+     */
+    protected ?Collection $indexedSettings = null;
+
+    /**
+     * @var int
+     */
+    protected int $indexedSettingsCount = 0;
+
+    /**
      * Resolve the FQCN of the configured Setting model.
      *
      * @return string
@@ -163,6 +178,38 @@ class SettingsContainer
     {
         $this->cachedSettings = null;
         $this->cachedSettingsWithDefaults = null;
+        $this->cachedSettingsByName = null;
+        $this->indexedSettings = null;
+    }
+
+    /**
+     * @param string $name
+     *
+     * @return AbstractSetting|null
+     */
+    protected function findCachedSetting (string $name): ?AbstractSetting
+    {
+        $settings = $this->all();
+
+        if ($this->cachedSettingsByName === null
+            || $this->indexedSettings !== $settings
+            || $this->indexedSettingsCount !== $settings->count()
+        ) {
+            $this->cachedSettingsByName = [];
+
+            foreach ($settings as $setting) {
+                $settingName = $setting->getAttribute('name');
+
+                if (is_string($settingName) || is_int($settingName) || $settingName instanceof \Stringable) {
+                    $this->cachedSettingsByName[(string) $settingName] ??= $setting;
+                }
+            }
+
+            $this->indexedSettings = $settings;
+            $this->indexedSettingsCount = $settings->count();
+        }
+
+        return $this->cachedSettingsByName[$name] ?? null;
     }
 
     /**
@@ -299,11 +346,7 @@ class SettingsContainer
         }
 
         if ($this->cacheSettings) {
-            $this->all();
-
-            return $this->cachedSettings
-                ->where('name', $this->castSettingName($name))
-                ->first();
+            return $this->findCachedSetting($this->castSettingName($name));
         }
 
         if ($this->isScoped) {

@@ -4,6 +4,7 @@ namespace Npabisz\LaravelSettings\Tests;
 
 use App\Models\Setting;
 use Npabisz\LaravelSettings\SettingsContainer;
+use Npabisz\LaravelSettings\Tests\Fixtures\ApiSettingName;
 use Npabisz\LaravelSettings\Tests\Fixtures\User;
 
 class SettingsContainerTest extends TestCase
@@ -223,6 +224,91 @@ class SettingsContainerTest extends TestCase
 
         // DB has 2 separate rows
         $this->assertEquals(2, \App\Models\Setting::where('name', 'api_mode')->count());
+    }
+
+    // ─── Lookup by name in the cached settings ──────────────
+
+    public function test_each_setting_is_found_by_name_among_many(): void
+    {
+        $user = $this->createUser();
+        $writer = new SettingsContainer($user);
+        $writer->set('api_mode', 'sandbox');
+        $writer->set('api_key', 'key-1');
+        $writer->set('currency', 'EUR');
+        $writer->set('shop_notes', 'notes');
+
+        $reader = new SettingsContainer($user);
+
+        $this->assertEquals('notes', $reader->get('shop_notes'));
+        $this->assertEquals('sandbox', $reader->get('api_mode'));
+        $this->assertEquals('EUR', $reader->get('currency'));
+        $this->assertEquals('key-1', $reader->get('api_key'));
+        $this->assertEquals(25.0, $reader->get('max_weight'));
+        $this->assertSame('currency', $reader->setting('currency')->name);
+        $this->assertNull($reader->setting('max_weight'));
+    }
+
+    public function test_setting_created_after_a_lookup_is_found(): void
+    {
+        $user = $this->createUser();
+        $container = new SettingsContainer($user);
+
+        $this->assertNull($container->get('api_key'));
+        $container->set('api_key', 'created-later');
+
+        $this->assertEquals('created-later', $container->get('api_key'));
+        $this->assertNotNull($container->setting('api_key'));
+    }
+
+    public function test_lookup_sees_settings_reloaded_after_clear_cache(): void
+    {
+        $user = $this->createUser();
+        $container = new SettingsContainer($user);
+        $this->assertEquals('production', $container->get('api_mode'));
+
+        (new SettingsContainer($user))->set('api_mode', 'sandbox');
+        $this->assertEquals('production', $container->get('api_mode'));
+
+        $container->clearCache();
+        $this->assertEquals('sandbox', $container->get('api_mode'));
+    }
+
+    public function test_defaults_appended_by_all_with_defaults_are_found_by_lookup(): void
+    {
+        $user = $this->createUser();
+        $container = new SettingsContainer($user);
+        $container->set('api_key', 'saved');
+        $this->assertNull($container->setting('currency'));
+
+        // allWithDefaults() appends unsaved defaults to the collection all() returns.
+        $container->allWithDefaults();
+
+        $default = $container->setting('currency');
+        $this->assertNotNull($default);
+        $this->assertNull($default->id);
+        $this->assertEquals('PLN', $container->get('currency'));
+        $this->assertEquals('saved', $container->get('api_key'));
+    }
+
+    public function test_lookup_by_backed_enum_name(): void
+    {
+        $user = $this->createUser();
+        $container = new SettingsContainer($user);
+        $container->set('api_mode', 'sandbox');
+
+        $this->assertEquals('sandbox', (new SettingsContainer($user))->get(ApiSettingName::ApiMode));
+    }
+
+    public function test_global_settings_are_found_by_name(): void
+    {
+        $global = new SettingsContainer();
+        $global->set('api_mode', 'sandbox');
+        $global->set('currency', 'EUR');
+
+        $reader = new SettingsContainer();
+
+        $this->assertEquals('EUR', $reader->get('currency'));
+        $this->assertEquals('sandbox', $reader->get('api_mode'));
     }
 
     // ─── noCache / cache toggle ─────────────────────────────
