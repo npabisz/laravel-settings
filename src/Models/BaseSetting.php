@@ -29,7 +29,7 @@ abstract class BaseSetting
     public function get (Model $model, string $key, mixed $value, array $attributes)
     {
         $instance = new static;
-        $instance->fromArray(json_decode($value, true) ?? []);
+        $instance->fromArray($value === null ? [] : (json_decode($value, true) ?? []));
 
         return $instance;
     }

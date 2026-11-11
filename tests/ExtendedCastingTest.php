@@ -171,7 +171,7 @@ class ExtendedCastingTest extends TestCase
     public function test_class_cast_null_value_returns_empty_instance(): void
     {
         // BaseSetting with null value returns an empty instance (not null)
-        // because BaseSetting::get() does fromArray(json_decode(null) ?? [])
+        // because BaseSetting::get() fills it from an empty array
         $setting = new \App\Models\Setting();
         $setting->setRawAttributes([
             'settingable_id' => null,
@@ -183,6 +183,34 @@ class ExtendedCastingTest extends TestCase
         $value = $setting->value;
         $this->assertInstanceOf(SenderSetting::class, $value);
         $this->assertEquals('', $value->name);
+    }
+
+    public function test_class_cast_null_value_triggers_no_deprecation(): void
+    {
+        $setting = new \App\Models\Setting();
+        $setting->setRawAttributes([
+            'settingable_id' => null,
+            'settingable_type' => null,
+            'name' => 'sender_info',
+            'value' => null,
+        ]);
+
+        $deprecations = [];
+
+        set_error_handler(function (int $level, string $message) use (&$deprecations) {
+            $deprecations[] = $message;
+
+            return true;
+        }, E_DEPRECATED | E_USER_DEPRECATED);
+
+        try {
+            $value = $setting->value;
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertInstanceOf(SenderSetting::class, $value);
+        $this->assertSame([], $deprecations);
     }
 
     public function test_class_cast_set_with_instance(): void
